@@ -53,6 +53,13 @@ constexpr Vec<T, Dim> sub(const Vec<T, Dim>& a, const Vec<T, Dim>& b)
     return operation<T, Dim, std::minus<T>>(a, b, std::minus<T>());
 }
 
+
+template<typename T, std::size_t Dim, typename std::enable_if_t<std::is_arithmetic<T>::value>* = nullptr>
+constexpr Vec<T, Dim> mut(const Vec<T, Dim>& a, const Vec<T, Dim>& b)
+{
+    return operation<T, Dim, std::multiplies<T>>(a, b, std::multiplies<T>());
+}
+
 template<typename T, std::size_t Dim, typename BinaryOperation, typename std::enable_if_t<std::is_arithmetic<T>::value>* = nullptr>
 constexpr Vec<T, Dim> operation(const T& scalar, const Vec<T, Dim>& a, BinaryOperation op)
 {

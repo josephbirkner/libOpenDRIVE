@@ -260,7 +260,35 @@ Mesh3D Road::get_lane_mesh(const Lane& lane, double s_start, double s_end, doubl
             s_iter++;
     }
 
+    auto heading = [&](Vec3D const& from, Vec3D const& to)-> Vec3D
+    {
+        // Approach 1: Based on normalized difference
+        auto heading_with_neg_components_normalized = normalize(sub(to, from));
+        auto heading_with_pos_components = add(heading_with_neg_components_normalized, {1.,1.,0.});
+        return mut({.5, .5, .0}, heading_with_pos_components);
+
+        // auto heading_with_neg_components_normalized = normalize(sub(to, from));
+        // if (heading_with_neg_components_normalized[1] < .0) {
+        //     // Flip x/y to make sure that headings are within a half-circle,
+        //     // of the original heading is within the 3rd/4th quadrant.
+        //     heading_with_neg_components_normalized = mut({-1., -1., 1.}, heading_with_neg_components_normalized);
+        // }
+        // // Only x/z can have a negative value [-1,1] now -> normalize to [0,1]
+        // auto heading_with_pos_components = add(heading_with_neg_components_normalized, {1.,0.,1.});
+        // return mut({.5, 0., .5}, heading_with_pos_components);
+
+        // Approach 2: Based on trig funcs
+        // auto hypot = euclDistance(from, to);
+        // auto diff = sub(to, from);
+        // return {
+        //     (cos(diff[1] / hypot)),
+        //     (sin(diff[0] / hypot)),
+        //     .0
+        // };
+    };
+
     Mesh3D out_mesh;
+    uint64_t s_idx = 0;
     for (const double& s : s_vals)
     {
         Vec3D        vn_inner_brdr{0, 0, 0};
@@ -274,18 +302,37 @@ Mesh3D Road::get_lane_mesh(const Lane& lane, double s_start, double s_end, doubl
         out_mesh.vertices.push_back(this->get_surface_pt(s, t_outer_brdr, &vn_outer_brdr));
         out_mesh.normals.push_back(vn_outer_brdr);
         out_mesh.st_coordinates.push_back({s, t_outer_brdr});
+
+        // Calculate heading from the second vertex onward
+        if (s_idx > 0) {
+            out_mesh.headings.push_back(
+                heading(
+                    out_mesh.vertices[out_mesh.vertices.size() - 1],
+                    out_mesh.vertices[out_mesh.vertices.size() - 3]));
+            out_mesh.headings.push_back(
+                heading(
+                    out_mesh.vertices[out_mesh.vertices.size() - 2],
+                    out_mesh.vertices[out_mesh.vertices.size() - 4]));
+            // For the first vertices, use the heading of
+            // the second vertices for each line.
+            if (s_idx == 1) {
+                out_mesh.headings.push_back(out_mesh.headings[0]);
+                out_mesh.headings.push_back(out_mesh.headings[1]);
+            }
+        }
+        ++s_idx;
     }
 
     const std::size_t num_pts = out_mesh.vertices.size();
     const bool        ccw = lane.id > 0;
     for (std::size_t idx = 3; idx < num_pts; idx += 2)
     {
-        std::array<size_t, 6> indicies_patch;
+        std::array<size_t, 6> indices_patch;
         if (ccw)
-            indicies_patch = {idx - 3, idx - 1, idx, idx - 3, idx, idx - 2};
+            indices_patch = {idx - 3, idx - 1, idx, idx - 3, idx, idx - 2};
         else
-            indicies_patch = {idx - 3, idx, idx - 1, idx - 3, idx - 2, idx};
-        out_mesh.indices.insert(out_mesh.indices.end(), indicies_patch.begin(), indicies_patch.end());
+            indices_patch = {idx - 3, idx, idx - 1, idx - 3, idx - 2, idx};
+        out_mesh.indices.insert(out_mesh.indices.end(), indices_patch.begin(), indices_patch.end());
     }
 
     if (outline_indices)

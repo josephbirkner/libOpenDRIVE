@@ -14,6 +14,7 @@ void Mesh3D::add_mesh(const Mesh3D& other)
     this->vertices.insert(this->vertices.end(), other.vertices.begin(), other.vertices.end());
     this->normals.insert(this->normals.end(), other.normals.begin(), other.normals.end());
     this->st_coordinates.insert(this->st_coordinates.end(), other.st_coordinates.begin(), other.st_coordinates.end());
+    this->headings.insert(this->headings.end(), other.headings.begin(), other.headings.end());
 
     for (const uint32_t& idx : other.indices)
         this->indices.push_back(idx + idx_offset);
