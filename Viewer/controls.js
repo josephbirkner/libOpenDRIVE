@@ -1,13 +1,13 @@
 var PARAMS = {
     load_file : () => { document.getElementById('xodr_file_input').click(); },
-    resolution : 0.3,
-    ref_line : true,
+    resolution : 1.0,
+    ref_line : false,
     roadmarks : true,
     wireframe : false,
-    spotlight : true,
+    spotlight : false,
     fitView : () => { fitViewToObj(refline_lines); },
-    lateralProfile : true,
-    laneHeight : true,
+    lateralProfile : false,
+    laneHeight : false,
     reload_map : () => { reloadOdrMap(); },
     view_mode : 'Default',
 };

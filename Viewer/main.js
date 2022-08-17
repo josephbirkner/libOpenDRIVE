@@ -82,12 +82,13 @@ const stFragmentShader = document.getElementById('stFragmentShader').textContent
 const refline_material = new THREE.LineBasicMaterial({
     color : COLORS.ref_line,
 });
-const road_network_material = new THREE.MeshPhongMaterial({
+const road_network_material = new THREE.MeshBasicMaterial({
     vertexColors : THREE.VertexColors,
     wireframe : PARAMS.wireframe,
     shininess : 20.0,
     transparent : true,
-    opacity : 0.4
+    depthTest: false,
+    opacity: 0.5
 });
 const lane_outlines_material = new THREE.LineBasicMaterial({
     color : COLORS.lane_outline,
@@ -191,7 +192,8 @@ function loadOdrMap(clear_map = true, fit_view = true)
     const odr_road_network_mesh = ModuleOpenDrive.get_road_network_mesh(OpenDriveMap, parseFloat(PARAMS.resolution));
     const odr_lanes_mesh = odr_road_network_mesh.lanes_mesh;
     const road_network_geom = get_geometry(odr_lanes_mesh);
-    road_network_geom.attributes.color.array.fill(COLORS.road);
+    // Disabled - visible vertex color now represents heading.
+    // road_network_geom.attributes.color.array.fill(COLORS.road);
     for (const [vert_start_idx, _] of getStdMapEntries(odr_lanes_mesh.lane_start_indices)) {
         const vert_idx_interval = odr_lanes_mesh.get_idx_interval_lane(vert_start_idx);
         const vert_count = vert_idx_interval[1] - vert_idx_interval[0];
@@ -253,13 +255,13 @@ function loadOdrMap(clear_map = true, fit_view = true)
     roadmark_picking_scene.add(roadmark_picking_mesh);
 
     /* lane outline */
-    const lane_outlines_geom = new THREE.BufferGeometry();
-    lane_outlines_geom.setAttribute('position', road_network_geom.attributes.position);
-    lane_outlines_geom.setIndex(getStdVecEntries(odr_lanes_mesh.get_lane_outline_indices(), true));
-    lane_outline_lines = new THREE.LineSegments(lane_outlines_geom, lane_outlines_material);
-    lane_outline_lines.renderOrder = 9;
-    disposable_objs.push(lane_outlines_geom);
-    scene.add(lane_outline_lines);
+    // const lane_outlines_geom = new THREE.BufferGeometry();
+    // lane_outlines_geom.setAttribute('position', road_network_geom.attributes.position);
+    // lane_outlines_geom.setIndex(getStdVecEntries(odr_lanes_mesh.get_lane_outline_indices(), true));
+    // lane_outline_lines = new THREE.LineSegments(lane_outlines_geom, lane_outlines_material);
+    // lane_outline_lines.renderOrder = 9;
+    // disposable_objs.push(lane_outlines_geom);
+    // scene.add(lane_outline_lines);
 
     /* roadmark outline */
     const roadmark_outlines_geom = new THREE.BufferGeometry();
@@ -280,16 +282,8 @@ function loadOdrMap(clear_map = true, fit_view = true)
     if (fit_view)
         fitViewToBbox(bbox_reflines);
 
-    /* ground grid */
-    let bbox_center_pt = new THREE.Vector3();
-    bbox_reflines.getCenter(bbox_center_pt);
-    ground_grid = new THREE.GridHelper(max_diag_dist, max_diag_dist / 10, 0x2f2f2f, 0x2f2f2f);
-    ground_grid.geometry.rotateX(Math.PI / 2);
-    ground_grid.position.set(bbox_center_pt.x, bbox_center_pt.y, bbox_reflines.min.z - 0.1);
-    disposable_objs.push(ground_grid.geometry);
-    scene.add(ground_grid);
-
     /* fit light */
+    let bbox_center_pt = new THREE.Vector3();
     light.position.set(bbox_reflines.min.x, bbox_reflines.min.y, bbox_reflines.max.z + max_diag_dist);
     light.target.position.set(bbox_center_pt.x, bbox_center_pt.y, bbox_center_pt.z);
     light.position.needsUpdate = true;
@@ -426,7 +420,7 @@ function get_geometry(odr_meshunion)
     const geom = new THREE.BufferGeometry();
     geom.setAttribute('position', new THREE.Float32BufferAttribute(getStdVecEntries(odr_meshunion.vertices, true).flat(), 3));
     geom.setAttribute('st', new THREE.Float32BufferAttribute(getStdVecEntries(odr_meshunion.st_coordinates, true).flat(), 2));
-    geom.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(geom.attributes.position.count * 3), 3));
+    geom.setAttribute('color', new THREE.Float32BufferAttribute(getStdVecEntries(odr_meshunion.headings, true).flat(), 3));
     geom.setAttribute('id', new THREE.Float32BufferAttribute(new Float32Array(geom.attributes.position.count * 4), 4));
     geom.setIndex(getStdVecEntries(odr_meshunion.indices, true));
     geom.computeVertexNormals();
