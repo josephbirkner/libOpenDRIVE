@@ -8,8 +8,13 @@ var PARAMS = {
     fitView : () => { fitViewToObj(refline_lines); },
     lateralProfile : false,
     laneHeight : false,
+    transparentLanes: false,
+    set_s110_pos: () => {
+        setView('{"pos":{"x":-344.3749308018508,"y":-154.2366395485481,"z":490.9618693021238},"target":{"x":-362.8370945913416,"y":-163.8077366293494,"z":483.4264373779297},"fov":49}');
+    },
     reload_map : () => { reloadOdrMap(); },
     view_mode : 'Default',
+    fov: 75
 };
 
 const gui = new dat.GUI();
@@ -19,6 +24,13 @@ gui.add(PARAMS, 'resolution', { Low : 1.0, Medium : 0.3, High : 0.02 }).name('�
 });
 gui.add(PARAMS, 'spotlight').name("🔦 Spotlight");
 gui.add(PARAMS, 'fitView').name("⟲ Reset Camera");
+gui.add(PARAMS, 'fov').name("👀 Camera FOV").onChange((val) => {
+    setCameraFov(val);
+});
+gui.add(PARAMS, 'transparentLanes').name("👀 Transparent Lanes").onChange((val) => {
+    setLanesTransparent(val);
+});
+gui.add(PARAMS, 'set_s110_pos').name("Set S110 S2 Camera Position")
 
 var gui_view_folder = gui.addFolder('View');
 gui_view_folder.add(PARAMS, 'view_mode', { Default : 'Default', 'Outlines' : 'Outlines' }).name("View Mode").onChange((val) => {

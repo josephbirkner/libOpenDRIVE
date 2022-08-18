@@ -45,7 +45,7 @@ document.getElementById('ThreeJS').appendChild(renderer.domElement);
 
 /* THREEJS globals */
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100000);
+const camera = new THREE.PerspectiveCamera(PARAMS.fov, window.innerWidth / window.innerHeight, 0.1, 100000);
 camera.up.set(0, 0, 1); /* Coordinate system with Z pointing up */
 const controls = new THREE.MapControls(camera, renderer.domElement);
 controls.addEventListener('start', () => { spotlight_paused = true; controls.autoRotate = false; });
@@ -86,9 +86,9 @@ const road_network_material = new THREE.MeshBasicMaterial({
     vertexColors : THREE.VertexColors,
     wireframe : PARAMS.wireframe,
     shininess : 20.0,
-    transparent : true,
+    transparent : PARAMS.transparentLanes,
     depthTest: false,
-    opacity: 0.5
+    opacity: PARAMS.transparentLanes ? 0.5 : 1.0
 });
 const lane_outlines_material = new THREE.LineBasicMaterial({
     color : COLORS.lane_outline,
@@ -278,7 +278,7 @@ function loadOdrMap(clear_map = true, fit_view = true)
     const bbox_reflines = new THREE.Box3().setFromObject(refline_lines);
     const max_diag_dist = bbox_reflines.min.distanceTo(bbox_reflines.max);
     camera.far = max_diag_dist * 1.5;
-    controls.autoRotate = fit_view;
+    controls.autoRotate = false;
     if (fit_view)
         fitViewToBbox(bbox_reflines);
 
@@ -536,4 +536,33 @@ function onDocumentMouseDbClick(e)
         bbox.setFromArray([ vertA, vertB ].flat());
         fitViewToBbox(bbox, false);
     }
+}
+
+function setCameraFov(val) {
+    camera.fov = val;
+    camera.updateProjectionMatrix();
+}
+
+function getView() {
+    controls.saveState()
+    console.log(JSON.stringify(
+        {pos: controls.position0, target: controls.target0, fov: PARAMS.fov}
+    ))
+}
+
+function setView(viewJson) {
+    view = JSON.parse(viewJson);
+    controls.position0.set(view.pos.x, view.pos.y, view.pos.z);
+    controls.target0.set(view.target.x, view.target.y, view.target.z);
+    controls.zoom = 1.0;
+    PARAMS.fov = camera.fov = view.fov;
+    camera.updateProjectionMatrix();
+    gui.updateDisplay();
+    controls.reset();
+}
+
+function setLanesTransparent(val) {
+    road_network_material.transparent = val;
+    road_network_material.opacity = val ? .5 : 1.0;
+    document.getElementById("ThreeJS").style.opacity = val ? ".5" : "1.0";
 }
